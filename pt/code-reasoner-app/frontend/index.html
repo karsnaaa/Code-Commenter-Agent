@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Commenter Agent</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- diff and diff2html for Code Refactoring Comparison -->
+    <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
+    <link rel="stylesheet" type="text/css"
+        href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=2">
+    <link
+        href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1>Code Commenter Agent</h1>
+        </header>
+
+        <main class="grid-layout">
+            <!-- Left Column: Upload Code -->
+            <section class="upload-section card">
+                <div class="output-header" style="margin-bottom: 1.5rem;">
+                    <h2>Upload Code</h2>
+                    <select id="historySelect" class="form-control small-select hidden" style="width: auto;">
+                        <option value="">Recent Analyses...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="analysisMode">Analysis Mode</label>
+                    <select id="analysisMode" class="form-control">
+                        <option value="Standard">Standard</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Code File</label>
+                    <div class="file-upload-wrapper" id="dropZone">
+                        <p>Drag and drop your code file here, or click to select</p>
+                        <button class="secondary-btn" id="chooseFileBtn">Choose File</button>
+                        <input type="file" id="fileUpload" class="hidden-input"
+                            accept=".py,.js,.jsx,.ts,.tsx,.java,.cpp,.c,.cs,.go,.rs,.txt,.md,.json,.html,.css,.sql">
+                        <div id="fileNameDisplay" class="file-name-display hidden"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="codeInput">Or Paste Code</label>
+                    <div class="editor-container">
+                        <textarea id="codeInput" placeholder="Paste your code here..."></textarea>
+                    </div>
+                </div>
+
+                <button id="analyzeBtn" class="primary-btn full-width">
+                    Analyze Code <span class="spinner hidden" id="spinner"></span>
+                </button>
+            </section>
+
+            <!-- Right Column: Results -->
+            <section class="results-section card">
+                <h2>Analysis Results</h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value text-blue" id="statTotalLines">-</div>
+                        <div class="stat-label">Total Lines</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-blue" id="statFunctions">-</div>
+                        <div class="stat-label">Functions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-blue" id="statClasses">-</div>
+                        <div class="stat-label">Classes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-blue" id="statComments">-</div>
+                        <div class="stat-label">Code Lines</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-blue" id="statTime" style="font-size: 1.5rem">O(?)</div>
+                        <div class="stat-label">Time Complexity</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value text-blue" id="statSpace" style="font-size: 1.5rem">O(?)</div>
+                        <div class="stat-label">Space Complexity</div>
+                    </div>
+                </div>
+
+                <div class="analysis-summary">
+                    <h3>Analysis Summary</h3>
+                    <div class="summary-item">
+                        <span class="label">File:</span>
+                        <span class="value file-path" id="summaryFile">None</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Language:</span>
+                        <span class="badge" id="summaryLanguage">unknown</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Full Width Bottom Section for Explanation -->
+        <section class="ai-output card hidden mt-2" id="outputSection">
+            <div class="output-header">
+                <h3>Detailed Explanation</h3>
+                <div class="header-controls">
+                    <select id="outputLanguageSelect" class="form-control small-select">
+                        <option value="English">English</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="French">French</option>
+                        <option value="German">German</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="Chinese (Simplified)">Chinese (Simplified)</option>
+                        <option value="Japanese">Japanese</option>
+                    </select>
+                    <button id="ttsSpeakBtn" class="secondary-btn small-btn">Speak</button>
+                    <select id="ttsSpeedSelect" class="form-control small-select">
+                        <option value="1">1x</option>
+                        <option value="1.25">1.25x</option>
+                        <option value="1.5">1.5x</option>
+                        <option value="1.75">1.75x</option>
+                        <option value="2">2x</option>
+                    </select>
+                    <button id="ttsPauseBtn" class="secondary-btn small-btn hidden">Pause</button>
+                    <button id="ttsResumeBtn" class="secondary-btn small-btn hidden">Resume</button>
+                    <button id="ttsStopBtn" class="secondary-btn small-btn hidden">Stop</button>
+                    <button id="viewDiffBtn" class="secondary-btn small-btn hidden">View Diff</button>
+                    <button id="downloadBtn" class="secondary-btn small-btn">Download MD</button>
+                    <button id="copyBtn" class="secondary-btn small-btn">Copy</button>
+                </div>
+            </div>
+            <div id="outputContent" class="markdown-body custom-scrollbar"></div>
+            <div id="diffContent" class="diff-body hidden" style="margin-top: 1rem;"></div>
+        </section>
+    </div>
+
+    <script src="script.js?v=2"></script>
+</body>
+
+</html>
